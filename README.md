@@ -90,7 +90,7 @@ the path down to 42 way points. The pruned path on the map is shown in the follo
 
 You can see the flight video here:
 
-[![Goal 1 flight](http://img.youtube.com/vi/LlIOmUREkAo/0.jpg)](http://www.youtube.com/watch?v=LlIOmUREkAo)
+[![3D Motion Planning Demo Flight - Goal1](http://img.youtube.com/vi/kas6BiCqDcc/0.jpg)](http://www.youtube.com/watch?v=kas6BiCqDcc)
 
 
 The execution log is as follows:
