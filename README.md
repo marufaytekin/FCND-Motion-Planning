@@ -83,7 +83,8 @@ goal1 = (-122.397745, 37.793837, 0)
 ```
 
 It creates an initial path of 151 way points with cost of 160.76955262170057. As the next step it prunes 
-the path down to 42 way points. The pruned path on the map is shown in Fig 1.
+the path down to 42 way points. The pruned path on the map is shown in the following figure:
+
 ![path 2](path1.png?raw=true "Fig 1: Path for goal1")
 
 
@@ -118,7 +119,9 @@ goal2 = (-122.399563, 37.795926, 0)
 (goal_lon, goal_lat) = goal2
 ```
 
-It creates a path with 454 waypoints then prunes the path down to 47. The path on the map is shown in Fig 2.
+It creates a path with 454 waypoints then prunes the path down to 47. The pruned path on the map is shown in
+ the following figure:
+ 
 ![path 2](path2.png?raw=true "Fig 2: Path for goal2")
 
 When I send the waypoints to simulator it throws an exception as follows:
