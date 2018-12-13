@@ -1,6 +1,7 @@
 from enum import Enum
 from queue import PriorityQueue
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def create_grid(data, drone_altitude, safety_distance):
@@ -31,17 +32,17 @@ def create_grid(data, drone_altitude, safety_distance):
         north, east, alt, d_north, d_east, d_alt = data[i, :]
         if alt + d_alt + safety_distance > drone_altitude:
             obstacle = [
-                int(np.clip(north - d_north - safety_distance - north_min, 0, north_size-1)),
-                int(np.clip(north + d_north + safety_distance - north_min, 0, north_size-1)),
-                int(np.clip(east - d_east - safety_distance - east_min, 0, east_size-1)),
-                int(np.clip(east + d_east + safety_distance - east_min, 0, east_size-1)),
+                int(np.clip(north - d_north - safety_distance - north_min, 0, north_size - 1)),
+                int(np.clip(north + d_north + safety_distance - north_min, 0, north_size - 1)),
+                int(np.clip(east - d_east - safety_distance - east_min, 0, east_size - 1)),
+                int(np.clip(east + d_east + safety_distance - east_min, 0, east_size - 1)),
             ]
-            grid[obstacle[0]:obstacle[1]+1, obstacle[2]:obstacle[3]+1] = 1
+            grid[obstacle[0]:obstacle[1] + 1, obstacle[2]:obstacle[3] + 1] = 1
 
     return grid, int(north_min), int(east_min)
 
 
-# Assume all actions cost the same.
+# Quadroter assume all actions cost the same.
 class Action(Enum):
     """
     An action is represented by a 3 element tuple.
@@ -50,11 +51,14 @@ class Action(Enum):
     to the current grid position. The third and final value
     is the cost of performing the action.
     """
-
     WEST = (0, -1, 1)
     EAST = (0, 1, 1)
     NORTH = (-1, 0, 1)
     SOUTH = (1, 0, 1)
+    NORTH_WEST = (-1, -1, np.sqrt(2))
+    NORTH_EAST = (-1, 1, np.sqrt(2))
+    SOUTH_WEST = (1, -1, np.sqrt(2))
+    SOUTH_EAST = (1, 1, np.sqrt(2))
 
     @property
     def cost(self):
@@ -62,14 +66,14 @@ class Action(Enum):
 
     @property
     def delta(self):
-        return (self.value[0], self.value[1])
+        return self.value[0], self.value[1]
 
 
 def valid_actions(grid, current_node):
     """
     Returns a list of valid actions given a grid and current node.
     """
-    valid_actions = list(Action)
+    _valid_actions = list(Action)
     n, m = grid.shape[0] - 1, grid.shape[1] - 1
     x, y = current_node
 
@@ -77,19 +81,27 @@ def valid_actions(grid, current_node):
     # it's an obstacle
 
     if x - 1 < 0 or grid[x - 1, y] == 1:
-        valid_actions.remove(Action.NORTH)
+        _valid_actions.remove(Action.NORTH)
     if x + 1 > n or grid[x + 1, y] == 1:
-        valid_actions.remove(Action.SOUTH)
+        _valid_actions.remove(Action.SOUTH)
     if y - 1 < 0 or grid[x, y - 1] == 1:
-        valid_actions.remove(Action.WEST)
+        _valid_actions.remove(Action.WEST)
     if y + 1 > m or grid[x, y + 1] == 1:
-        valid_actions.remove(Action.EAST)
+        _valid_actions.remove(Action.EAST)
 
-    return valid_actions
+    if (x - 1 < 0 or y - 1 < 0) or grid[x - 1, y - 1] == 1:
+        _valid_actions.remove(Action.NORTH_WEST)
+    if (x - 1 < 0 or y + 1 > m) or grid[x - 1, y + 1] == 1:
+        _valid_actions.remove(Action.NORTH_EAST)
+    if (x + 1 > n or y - 1 < 0) or grid[x + 1, y - 1] == 1:
+        _valid_actions.remove(Action.SOUTH_WEST)
+    if (x + 1 > n or y + 1 > m) or grid[x + 1, y + 1] == 1:
+        _valid_actions.remove(Action.SOUTH_EAST)
+
+    return _valid_actions
 
 
 def a_star(grid, h, start, goal):
-
     path = []
     path_cost = 0
     queue = PriorityQueue()
@@ -98,16 +110,16 @@ def a_star(grid, h, start, goal):
 
     branch = {}
     found = False
-    
+
     while not queue.empty():
         item = queue.get()
         current_node = item[1]
         if current_node == start:
             current_cost = 0.0
-        else:              
+        else:
             current_cost = branch[current_node][0]
-            
-        if current_node == goal:        
+
+        if current_node == goal:
             print('Found a path.')
             found = True
             break
@@ -118,12 +130,12 @@ def a_star(grid, h, start, goal):
                 next_node = (current_node[0] + da[0], current_node[1] + da[1])
                 branch_cost = current_cost + action.cost
                 queue_cost = branch_cost + h(next_node, goal)
-                
-                if next_node not in visited:                
-                    visited.add(next_node)               
+
+                if next_node not in visited:
+                    visited.add(next_node)
                     branch[next_node] = (branch_cost, current_node, action)
                     queue.put((queue_cost, next_node))
-             
+
     if found:
         # retrace steps
         n = goal
@@ -136,11 +148,70 @@ def a_star(grid, h, start, goal):
     else:
         print('**********************')
         print('Failed to find a path!')
-        print('**********************') 
+        print('**********************')
     return path[::-1], path_cost
-
 
 
 def heuristic(position, goal_position):
     return np.linalg.norm(np.array(position) - np.array(goal_position))
 
+
+def set_heading(waypoints):
+    """
+    sets waypoint heading relative to the previous waypoint
+    """
+    wp_len = len(waypoints)
+    for i in range(wp_len):
+        if i < wp_len - 1:
+            wp1 = waypoints[i]
+            wp2 = waypoints[i+1]
+            wp2[3] = np.arctan2((wp2[1] - wp1[1]), (wp2[0] - wp1[0]))
+    return waypoints
+
+
+def point(p):
+    return np.array([p[0], p[1], 1.]).reshape(1, -1)
+
+
+def collinearity_check(p1, p2, p3, epsilon=1e-5):
+    m = np.concatenate((p1, p2, p3), 0)
+    det = np.linalg.det(m)
+    return abs(det) < epsilon
+
+
+def prune_path(path):
+    pruned_path = [p for p in path]
+    # DONE: prune the path!
+    i = 0
+    while i < len(pruned_path) - 2:
+        p1 = point(pruned_path[i])
+        p2 = point(pruned_path[i + 1])
+        p3 = point(pruned_path[i + 2])
+
+        if collinearity_check(p1, p2, p3):
+            pruned_path.remove(pruned_path[i + 1])
+        else:
+            i += 1
+    return pruned_path
+
+
+def draw_plot(grid, path, start, goal):
+    plt.imshow(grid, cmap='Greys', origin='lower')
+    pp = np.array(path)
+
+    if len(pp) > 0:
+        plt.plot(pp[:, 1], pp[:, 0], 'r')
+        plt.scatter(pp[:, 1], pp[:, 0], color='r')
+
+    (start_north, start_east) = start
+    (goal_north, goal_east) = goal
+
+    plt.plot(start_east, start_north, 'x', markersize=4)
+    plt.plot(goal_east, goal_north, 'x', markersize=4)
+
+    plt.xlabel('EAST')
+    plt.ylabel('NORTH')
+
+    plt.show()
+
+    return
