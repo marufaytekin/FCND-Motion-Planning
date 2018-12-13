@@ -86,6 +86,12 @@ It creates an initial path of 151 way points with cost of 160.76955262170057. As
 the path down to 42 way points. The pruned path on the map is shown in Fig 1.
 ![path 2](path1.png?raw=true "Fig 1: Path for goal1")
 
+
+You can see the flight video here:
+
+[![Goal 1 flight](http://img.youtube.com/vi/LlIOmUREkAo/0.jpg)](http://www.youtube.com/watch?v=LlIOmUREkAo)
+
+
 The execution log is as follows:
 ```Searching for a path ...
 37.792480 -122.397450
