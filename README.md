@@ -1,9 +1,8 @@
-# Criteria 1
+# Project: 3D Motion Planning
 
-``` Test that `motion_planning.py` is a modified version of `backyard_flyer_solution.py` for simple path planning. Verify that 
-both scripts work. Then, compare them side by side and describe in words how each of the modifications implemented in 
-`motion_planning.py` is functioning. ```
+## Explain the Starter Code
 
+### 1. Explain the functionality of what's provided in `motion_planning.py` and `planning_utils.py`
  
 The way points in `backyard_flyer_solution.py` are manually set in `calculate_box()` function. On the other hand 
 `motion_planning.py` uses a-star search algorthm to find the shortest path to the goal. The main features of 
@@ -32,66 +31,48 @@ Then it executes `cmd_position` command to send the drone to the target waypoint
 * Once all way points are reached `local_position_callback` sets the flight state to `LANDING` and calls 
 `landing_transition` function. (51)
 
-# Criteria 2
+## Implementing Your Path Planning Algorithm
 
-``` In the starter code, we assume that the home position is where the drone first initializes, but in reality
-you need to be able to start planning from anywhere. Modify your code to read the global home location from 
-the first line of the colliders.csv file and set that position as global home (self.set_home_position()) ```
- 
+### 1. Set your global home position
+
 This is implemented at line 129.
 
-# Criteria 3
-
-``` In the starter code, we assume the drone takes off from map center, but you'll need to be able to takeoff 
-from anywhere. Retrieve your current position in geodetic coordinates from self._latitude, self._longitude and 
-self._altitude. Then use the utility function global_to_local() to convert to local position (using self.global_home 
-as well, which you just set) ```
+### 2. Set your current local position
 
 Implemented at line 136.
 
-# Criteria 4
-
-``` In the starter code, the start point for planning is hardcoded as map center. Change this to be your current 
-local position. ```
+### 3. Set grid start position from local position
 
 Implemented at lines 150-156.
 
-# Criteria 5
-
-``` In the starter code, the goal position is hardcoded as some location 10 m north and 10 m east of map center. 
-Modify this to be set as some arbitrary position on the grid given any geodetic coordinates (latitude, longitude) ```
+### 4. Set grid goal position from geodetic coords
 
 Implemented at lines 164-168.
 
-# Criteria 6
+### 5. Modify A* to include diagonal motion
 
-``` Write your search algorithm. Minimum requirement here is to add diagonal motions to the A* implementation provided,
- and assign them a cost of sqrt(2). However, you're encouraged to get creative and try other methods from 
- the lessons and beyond! ```
-
-Added diagonal motions to a_star() function in planning_tils. Diagonal motions are called  NORTH_WEST, NORTH_EAST, 
-SOUTH_WEST, SOUTH_EAST and they cost sqrt(2) 
+Added diagonal motions to `a_star()` function in `planning_utils.py`. Diagonal motions are called  NORTH_WEST, NORTH_EAST, 
+SOUTH_WEST, SOUTH_EAST and they cost `sqrt(2)` 
 
 
-# Criteria 7
+### 6. Cull waypoints 
 
-``` Cull waypoints from the path you determine using search. ```
+I implemented `prune_path()` function in `planning_utils.py`. It uses collinearity test to prune the path of unnecessary waypoints.
+`prune_path` calls `collinearity_check` function and passes three connected points to it. Then `collinearity_check` function
+ calculates the determinant of the passed points. Determinant gives the area of these points when they are connected. 
+ If the area is 0 that means these points are on the same line. We use a small number epsilon to tolerate small differences. 
+ This way we can consider almost straight lines as one straight line.
 
-I used prune_path() function in planning_utils.py. It uses collinearity test to prune the path of unnecessary waypoints.
-collinearity_check function takes three connected points and calculates the determinent of these points. Determinent gives the 
-area of these points when they are connected. If the area is 0 that means these points are on the same line. We use 
-a small number epsilon to tolerate small differences. This way we can consider almost straight lines as one straight line. 
-
-# Extra Step
-
-``` Add heading commands to waypoints ```
+## 7. Extra Step: Add heading commands to waypoints
 
 This is implemente din line 197. `set_heading` function from `planning_utils` is called to calculate a unique heading 
- for each way point. It calculates the heading based on relative position to the current position.
+for each way point. It calculates the heading based on relative position to the current position.
  
 
-# Executing the flight
+## Executing the flight
 
+### 1. Does it work?
+Yes, it works!
 
 ## Goal 1
 
