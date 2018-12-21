@@ -119,31 +119,23 @@ goal2 = (-122.399563, 37.795926, 0)
 (goal_lon, goal_lat) = goal2
 ```
 
-It creates a path with 454 waypoints then prunes the path down to 47. The pruned path on the map is shown in
- the following figure:
+It creates a path with 454 waypoints then prunes the path down to 47. The pruned path on the map is shown in the following figure:
  
 ![path 2](path2.png?raw=true "Fig 2: Path for goal2")
 
-When I send the waypoints to simulator it throws an exception as follows:
+You can see the flight video here:
 
-```
-Searching for a path ...
-global home [-122.3974533   37.7924804    0.       ], position [-122.3974534   37.7924795    0.257    ], local position [-0.09947606 -0.01336324 -0.25823599]
-North offset = -316, east offset = -445
-north_start: 0 easth_start: 0
-grid_start: (316, 445)
-grid_goal: (697, 257)
-Found a path.
-path length:  454 path cost:  510.161471607488
-pruning the path...
-pruned path length:  47
-the first 10 waypoints: [(316, 445), (340, 421), (345, 426), (395, 426), (460, 361), (454, 355), (454, 295), (455, 294), (505, 294), (515, 284)]
-Sending waypoints to simulator ...
-Traceback (most recent call last):
-  File "/Users/maruf.aytekin/miniconda2/envs/fcnd/lib/python3.6/site-packages/udacidrone/connection/connection.py", line 88, in notify_message_listeners
-    fn(name, msg)
-  File "/Users/maruf.aytekin/miniconda2/envs/fcnd/lib/python3.6/site-packages/udacidrone/drone.py", line 117, in on_message_receive
-    if (((msg.time - self._message_time) > 0.0)):
-AttributeError: 'int' object has no attribute 'time'
-```
-I tried to find different goals but ran into this error each time. 
+[![3D Motion Planning Demo Flight - Goal2](http://img.youtube.com/vi/CDBEfLeUeEg/0.jpg)](http://www.youtube.com/watch?v=CDBEfLeUeEg)
+
+
+
+## Graph Based Implementation
+
+`motion_planning_graph.py` implements graph version of path planning algorithm based on Voronoi diagram.
+It finds following path:
+ 
+![path 3](path3.png?raw=true "Fig 3: Path for goal2")
+
+You can see the flight video here:
+
+[![3D Graph Based Motion Planning Demo Flight - Goal2](http://img.youtube.com/vi/mzxtqZ8l4f8/0.jpg)](http://www.youtube.com/watch?v=mzxtqZ8l4f8)

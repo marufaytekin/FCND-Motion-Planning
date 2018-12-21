@@ -2,13 +2,22 @@ import argparse
 import time
 import msgpack
 from enum import Enum, auto
-
+from grid import create_grid
+from city_search import find_path, draw_path
 from udacidrone import Drone
 from udacidrone.connection import MavlinkConnection
 from udacidrone.messaging import MsgID
 from udacidrone.frame_utils import *
-from planning_utils import a_star, heuristic, set_heading, prune_path, draw_plot
-from grid import create_grid
+import numpy as np
+import networkx as nx
+
+from planning_utils import set_heading
+
+nx.__version__
+
+import networkx as nx
+
+nx.__version__
 
 
 class States(Enum):
@@ -30,6 +39,7 @@ class MotionPlanning(Drone):
         self.waypoints = wp
         self.in_mission = True
         self.check_state = {}
+        self.find_path = object
 
         # initial state
         self.flight_state = States.MANUAL
@@ -62,11 +72,12 @@ class MotionPlanning(Drone):
             if self.flight_state == States.MANUAL:
                 self.arming_transition()
             elif self.flight_state == States.ARMING:
-              if self.armed and len(self.waypoints) == 0:
-                  self.plan_path()
-              else:
-                  self.send_waypoints()
-                  self.flight_state = States.PLANNING
+                if self.armed and len(self.waypoints) == 0:
+                    self.plan_path()
+                else:
+                    # send waypoints to sim (this is just for visualization of waypoints)
+                    self.send_waypoints()
+                    self.flight_state = States.PLANNING
             elif self.flight_state == States.PLANNING:
                 self.takeoff_transition()
             elif self.flight_state == States.DISARMING:
@@ -118,7 +129,7 @@ class MotionPlanning(Drone):
         self.flight_state = States.PLANNING
         print("Searching for a path ...")
         TARGET_ALTITUDE = 5
-        SAFETY_DISTANCE = 5
+        SAFETY_DISTANCE = 3
 
         self.target_position[2] = TARGET_ALTITUDE
 
@@ -164,15 +175,17 @@ class MotionPlanning(Drone):
         # DONE: adapt to set goal as latitude / longitude position and convert
         # goal_north, goal_east, goal_alt = global_to_local(grid_goal, self.global_home)
 
-        goal1 = (-122.397745, 37.793837, 0)
-        (goal_lon, goal_lat, goal_alt) = goal1
+        goal_lon = -122.397745
+        goal_lat = 37.793837
+        goal_alt = 0.050
 
         goal2 = (-122.399563, 37.795926, 0)
         (goal_lon, goal_lat, goal_alt) = goal2
 
         goal_global_position = [goal_lon, goal_lat, goal_alt]
         goal_local_position = global_to_local(goal_global_position, self.global_home)
-        (goal_north, goal_east) = (int(goal_local_position[0]), int(goal_local_position[1]))
+        goal_ne = (int(goal_local_position[0]), int(goal_local_position[1]))
+        (goal_north, goal_east) = goal_ne
         grid_goal = (int(np.ceil(goal_north - north_offset)), int(np.ceil(goal_east - east_offset)))
         print("grid_goal:", grid_goal)
 
@@ -180,20 +193,13 @@ class MotionPlanning(Drone):
         # DONE: add diagonal motions with a cost of sqrt(2) to your A* implementation
         # or move to a different search space such as a graph (not done here)
         print('Local Start and Goal: ', grid_start, grid_goal)
-        path, path_cost = a_star(grid, heuristic, grid_start, grid_goal)
-        print("path length: ", len(path), "path cost: ", path_cost)
+        grid, path, cost = find_path(data, grid_start, grid_goal, TARGET_ALTITUDE, SAFETY_DISTANCE)
+        # DONE: (if you're feeling ambitious): Try a different approach altogether!
 
-        # DONE: prune path to minimize number of waypoints
-        # DONE (if you're feeling ambitious): Try a different approach altogether!
-        path = prune_path(path)
-        print('pruning the path...')
-        print("pruned path length: ", len(path))
-        print("the first 10 waypoints: ", path[:10])
+        print(path)
+        draw_path(grid, path)
 
-        # draw path
-        draw_plot(grid, path, grid_start, grid_goal)
-
-        # Convert path to way points
+        # Convert path to waypoints
         waypoints = [[p[0] + north_offset, p[1] + east_offset, TARGET_ALTITUDE, 0] for p in path]
 
         # Add heading commands to waypoints
@@ -231,6 +237,7 @@ if __name__ == "__main__":
     drone = MotionPlanning(conn, wp)
 
     (err, wp) = drone.start()
+
     if err:
         print(err)
         print(wp)
