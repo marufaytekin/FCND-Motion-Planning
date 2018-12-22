@@ -1,80 +1,11 @@
-# Project: 3D Motion Planning
-
-## Explain the Starter Code
-
-### 1. Explain the functionality of what's provided in `motion_planning.py` and `planning_utils.py`
- 
-The way points in `backyard_flyer_solution.py` are manually set in `calculate_box()` function. On the other hand the 
-original `motion_planning.py` uses a-star search algorithm to find the shortest path to the goal. The main features of the original  
-`motion_planning.py` are as follows:
-
-* The state machine implemented on `motion_planning.py` adds an extra state called `PLANNING` after after `ARMING` and before 
-`TAKEOFF` state.
-* After the completion of `ARMING` state, `plan_path()` function is called to find a path to target and the drone enters in 
-`PLANNING` state. `path_plan()` function is working as follows:
-    - Sets the flight state to `PLANNING`. (115)
-    - Sets the target altitude and safety distance. (117-118)
-    - Loads the data file and creates the grid by `executing create_grid()` function in `planning_utils.py`.(133-136)
-    - Sets the `grid_start` and `grid_goal` points. (139, 143)
-    - Runs the a-star search in `planning_utils.py` file. (150). I would like to highlight two points of a-star search as 
-follows. a-star uses four actions as the valid actions. The valid actions are `WEST`, `EAST`, `SOUTH` and `NORTH`. 
-Each valid action costs the same. The second point is that a-star uses a `heuristic` function which calculates the cost
- as the distance to the goal.
-    - It returns a path with the cost to the goal.
-    - The path is converted way points. (155)
-    - It sets the waypoints and calls `send_waypoints()` function. (157-159)
-* Once `plan_path()` function completes execution `state_callback` function initiates `takeoff_transition` at line 69.
-* Once `take_off_transition` completes, it triggers `waypoint_transition()` in `local_position_callback()` function. (45)
-* `Waypoint_transition` function sets the flight state to `WAYPOINT` and stes the target position to the first waypoint. 
-Then it executes `cmd_position` command to send the drone to the target waypoint. (86-90)
-* `local_position_callback` function calls `waypoint_transition` for all way points in `self.waypoints` list. (49)
-* Once all way points are reached `local_position_callback` sets the flight state to `LANDING` and calls 
-`landing_transition` function. (51)
-
-## Implementing Your Path Planning Algorithm
-
-### 1. Set your global home position
-
-This is implemented at line 129.
-
-### 2. Set your current local position
-
-Implemented at line 136.
-
-### 3. Set grid start position from local position
-
-Implemented at lines 150-156.
-
-### 4. Set grid goal position from geodetic coords
-
-Implemented at lines 164-168.
-
-### 5. Modify A* to include diagonal motion
-
-Added diagonal motions to `a_star()` function in `grid_search.py`. Diagonal motions are called  NORTH_WEST, NORTH_EAST, 
-SOUTH_WEST, SOUTH_EAST and they cost `sqrt(2)` 
+# 3D Motion Planning
 
 
-### 6. Cull waypoints 
+## Grid Based Implementation
 
-I implemented `prune_path()` function in `planning_utils.py`. It uses collinearity test to prune the path of unnecessary waypoints.
-`prune_path` calls `collinearity_check` function and passes three connected points to it. Then `collinearity_check` function
- calculates the determinant of the passed points. Determinant gives the area of these points when they are connected. 
- If the area is 0 that means these points are on the same line. We use a small number epsilon to tolerate small differences. 
- This way we can consider almost straight lines as one straight line.
+`motion_planning_grid_based.py` implements grid based version of path planning algorithm. 
 
-## 7. Extra Step: Add heading commands to waypoints
-
-`set_heading` function is implemented in `planning_utils`. It is called to calculate a unique heading 
-for each way point. It calculates the heading based on relative position to the current position.
- 
-
-## Executing the flight
-
-### 1. Does it work?
-Yes, it works!
-
-## Goal 1
+### Goal 1
 
 I manually flew the drone and found the first goal. The first goal point is as follows:
 ```python
@@ -111,7 +42,7 @@ Sending waypoints to simulator ...
 takeoff transition
 ```
 
-## Goal 2
+### Goal 2
 
 I manually flew the drone and found the second goal. Second goal point is as follows:
 ```python
