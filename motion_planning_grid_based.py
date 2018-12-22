@@ -1,16 +1,19 @@
 import argparse
 import time
-from graph_search import find_path as city_search_find_path
 from udacidrone.connection import MavlinkConnection
 from motion_planning import *
+from grid_search import a_star, heuristic
+from planning_utils import prune_path
 
 
-def find_path(_, grid_start, grid_goal):
-    path, path_cost = city_search_find_path(data, grid_start, grid_goal, 5, 3)
+def find_path(grid, grid_start, grid_goal):
+    path, path_cost = a_star(grid, heuristic, grid_start, grid_goal)
+    path = prune_path(path)
     return path, path_cost
 
 
 if __name__ == "__main__":
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', type=int, default=5760, help='Port number')
     parser.add_argument('--host', type=str, default='127.0.0.1', help="host address, i.e. '127.0.0.1'")

@@ -4,8 +4,8 @@
 
 ### 1. Explain the functionality of what's provided in `motion_planning.py` and `planning_utils.py`
  
-The way points in `backyard_flyer_solution.py` are manually set in `calculate_box()` function. On the other hand 
-`motion_planning.py` uses a-star search algorthm to find the shortest path to the goal. The main features of 
+The way points in `backyard_flyer_solution.py` are manually set in `calculate_box()` function. On the other hand the 
+original `motion_planning.py` uses a-star search algorithm to find the shortest path to the goal. The main features of the original  
 `motion_planning.py` are as follows:
 
 * The state machine implemented on `motion_planning.py` adds an extra state called `PLANNING` after after `ARMING` and before 
@@ -51,7 +51,7 @@ Implemented at lines 164-168.
 
 ### 5. Modify A* to include diagonal motion
 
-Added diagonal motions to `a_star()` function in `planning_utils.py`. Diagonal motions are called  NORTH_WEST, NORTH_EAST, 
+Added diagonal motions to `a_star()` function in `grid_search.py`. Diagonal motions are called  NORTH_WEST, NORTH_EAST, 
 SOUTH_WEST, SOUTH_EAST and they cost `sqrt(2)` 
 
 
@@ -65,7 +65,7 @@ I implemented `prune_path()` function in `planning_utils.py`. It uses collineari
 
 ## 7. Extra Step: Add heading commands to waypoints
 
-This is implemente din line 197. `set_heading` function from `planning_utils` is called to calculate a unique heading 
+`set_heading` function is implemented in `planning_utils`. It is called to calculate a unique heading 
 for each way point. It calculates the heading based on relative position to the current position.
  
 

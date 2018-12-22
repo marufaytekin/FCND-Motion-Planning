@@ -1,14 +1,10 @@
-import argparse
-import time
+import _thread
 import msgpack
 from enum import Enum, auto
-
 from udacidrone import Drone
-from udacidrone.connection import MavlinkConnection
 from udacidrone.messaging import MsgID
 from udacidrone.frame_utils import *
-from planning_utils import a_star, heuristic, set_heading, prune_path, draw_plot
-from grid import create_grid
+from planning_utils import create_grid, set_heading, draw_path
 
 
 class States(Enum):
@@ -23,9 +19,11 @@ class States(Enum):
 
 class MotionPlanning(Drone):
 
-    def __init__(self, connection: object, wp=[]) -> object:
+    def __init__(self, connection: object, data, func_find_path, goal, wp=[]) -> object:
         super().__init__(connection)
-
+        self.data = data
+        self.goal = goal
+        self.find_path = func_find_path
         self.target_position = np.array([0.0, 0.0, 0.0])
         self.waypoints = wp
         self.in_mission = True
@@ -62,11 +60,11 @@ class MotionPlanning(Drone):
             if self.flight_state == States.MANUAL:
                 self.arming_transition()
             elif self.flight_state == States.ARMING:
-              if self.armed and len(self.waypoints) == 0:
-                  self.plan_path()
-              else:
-                  self.send_waypoints()
-                  self.flight_state = States.PLANNING
+                if self.armed and len(self.waypoints) == 0:
+                    self.plan_path()
+                else:
+                    self.send_waypoints()
+                    self.flight_state = States.PLANNING
             elif self.flight_state == States.PLANNING:
                 self.takeoff_transition()
             elif self.flight_state == States.DISARMING:
@@ -140,11 +138,8 @@ class MotionPlanning(Drone):
         print('global home {0}, position {1}, local position {2}'.format(self.global_home, self.global_position,
                                                                          self.local_position))
 
-        # Read in obstacle map
-        data = np.loadtxt('colliders.csv', delimiter=',', dtype='Float64', skiprows=2)
-
         # Define a grid for a particular altitude and safety margin around obstacles
-        grid, north_offset, east_offset = create_grid(data, TARGET_ALTITUDE, SAFETY_DISTANCE)
+        grid, north_offset, east_offset = create_grid(self.data, TARGET_ALTITUDE, SAFETY_DISTANCE)
         print("North offset = {0}, east offset = {1}".format(north_offset, east_offset))
 
         # Define starting point on the grid (this is just grid center)
@@ -164,11 +159,7 @@ class MotionPlanning(Drone):
         # DONE: adapt to set goal as latitude / longitude position and convert
         # goal_north, goal_east, goal_alt = global_to_local(grid_goal, self.global_home)
 
-        goal1 = (-122.397745, 37.793837, 0)
-        (goal_lon, goal_lat, goal_alt) = goal1
-
-        goal2 = (-122.399563, 37.795926, 0)
-        (goal_lon, goal_lat, goal_alt) = goal2
+        (goal_lon, goal_lat, goal_alt) = self.goal
 
         goal_global_position = [goal_lon, goal_lat, goal_alt]
         goal_local_position = global_to_local(goal_global_position, self.global_home)
@@ -180,18 +171,11 @@ class MotionPlanning(Drone):
         # DONE: add diagonal motions with a cost of sqrt(2) to your A* implementation
         # or move to a different search space such as a graph (not done here)
         print('Local Start and Goal: ', grid_start, grid_goal)
-        path, path_cost = a_star(grid, heuristic, grid_start, grid_goal)
+        path, path_cost = self.find_path(grid, grid_start, grid_goal)
         print("path length: ", len(path), "path cost: ", path_cost)
 
-        # DONE: prune path to minimize number of waypoints
-        # DONE (if you're feeling ambitious): Try a different approach altogether!
-        path = prune_path(path)
-        print('pruning the path...')
-        print("pruned path length: ", len(path))
-        print("the first 10 waypoints: ", path[:10])
-
         # draw path
-        draw_plot(grid, path, grid_start, grid_goal)
+        _thread.start_new_thread(draw_path, (grid, path,))
 
         # Convert path to way points
         waypoints = [[p[0] + north_offset, p[1] + east_offset, TARGET_ALTITUDE, 0] for p in path]
@@ -218,26 +202,3 @@ class MotionPlanning(Drone):
         # Only required if they do threaded
         # while self.in_mission:
         #    pass
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--port', type=int, default=5760, help='Port number')
-    parser.add_argument('--host', type=str, default='127.0.0.1', help="host address, i.e. '127.0.0.1'")
-    args = parser.parse_args()
-
-    conn = MavlinkConnection('tcp:{0}:{1}'.format(args.host, args.port), threaded=False, send_rate=5, timeout=600)
-    wp = []
-    drone = MotionPlanning(conn, wp)
-
-    (err, wp) = drone.start()
-    if err:
-        print(err)
-        print(wp)
-        drone.stop()
-        time.sleep(10)
-        print("restarting connection...")
-        conn = MavlinkConnection('tcp:{0}:{1}'.format(args.host, args.port), threaded=False, send_rate=5, timeout=600)
-        drone = MotionPlanning(conn, wp)
-        time.sleep(1)
-        drone.start()
